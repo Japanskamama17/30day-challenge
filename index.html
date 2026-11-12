@@ -149,7 +149,17 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 .sample-note { font-size: 12px; color: var(--warm); font-weight: 700; margin: 0; }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); z-index: 20;
   background: var(--fg); color: var(--bg); padding: 10px 18px; border-radius: 999px; font-size: 14px; max-width: calc(100% - 32px); text-align: center; }
-@media (prefers-reduced-motion: reduce) { .btn, .bar i { transition: none; } }
+/* 30日目を達成したときだけ出るカード */
+.grad { border: 2px solid var(--warm); background: var(--warm-soft); text-align: center; align-items: center; animation: pop .5s ease-out; }
+.grad .label { color: var(--warm); }
+.grad .big { font-size: 40px; line-height: 1; margin: 2px 0 0; }
+.grad h2 { font-family: var(--display); font-weight: 600; font-size: 22px; }
+.grad .lead { text-align: left; }
+.grad hr { width: 100%; border: 0; border-top: 1px dashed var(--warm); margin: 4px 0; }
+.grad .secret { margin: 0; font-size: 13px; font-weight: 700; color: var(--warm); letter-spacing: .04em; }
+a.btn { display: block; text-align: center; text-decoration: none; }
+@keyframes pop { from { transform: scale(.94); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .btn, .bar i { transition: none; } .grad { animation: none; } }
 </style>
 
 </head>
@@ -607,6 +617,14 @@ function pickerHtml(t) {
   </div>`;
 }
 
+// 30日目（プランの最終日）のやることが全部できたら true。サンプルでは出さない
+function graduated() {
+  if (!state || state.sample || !state.tasks.length) return false;
+  const lastOrig = planBounds().lastOrig;
+  const final = state.tasks.filter(t => t.orig === lastOrig && !t.extra && t.status !== 'skip');
+  return final.length > 0 && final.every(t => t.status === 'done');
+}
+
 function milestoneDate(m, b) { return addDays(b.first, (m.day || b.span) - 1); }
 
 function viewPlan() {
@@ -623,6 +641,7 @@ function viewPlan() {
   const upcoming = T.filter(t => t.date > today && t.status === 'todo');
   const next = upcoming[0];
   const finished = today > b.last && !missed.length;
+  const grad = graduated();
   state.reviews = state.reviews || {};
 
   let dayLabel;
@@ -713,6 +732,16 @@ function viewPlan() {
     ${extraDone ? `<p class="extra-note">うち、自分で追加した「できたこと」${extraDone}件</p>` : ''}
     <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="達成率"><i style="width:${pct}%"></i></div>
   </article>
+  ${grad ? `<article class="card grad">
+    <p class="label">30日目、達成</p>
+    <p class="big" aria-hidden="true">🎉</p>
+    <h2>おめでとうございます！</h2>
+    <p class="lead">最後の一歩まで、走り切りました。できた日も、回した日も、手放した日も、ぜんぶがあなたの30日です。まずは自分に「おつかれさま」を。</p>
+    <hr>
+    <p class="secret">🔓 次のステージが開きました</p>
+    <p class="lead">次は、期限を自分で決めてゴールを目指す「ゴールチャレンジ」。この30日の記録は、同じブラウザならそのまま引き継げます。</p>
+    <a class="btn warm" href="./goal.html">ゴールチャレンジへ進む →</a>
+  </article>` : ''}
   ${dueBanner}
   ${todayHtml}
   ${missedHtml}
@@ -773,9 +802,11 @@ function commit() { sortTasks(); save(state); render(); }
 function bindPlan() {
   root.querySelectorAll('.check').forEach(c => c.addEventListener('change', () => {
     const t = find(c.dataset.id); if (!t) return;
+    const before = graduated();
     t.status = c.checked ? 'done' : 'todo';
-    if (c.checked) show('できました！');
+    if (c.checked) show(!before && graduated() ? '30日目、達成！おめでとうございます🎉' : 'できました！');
     commit();
+    if (!before && graduated()) window.scrollTo({ top: 0, behavior: 'smooth' });
   }));
   root.querySelectorAll('.memo').forEach(inp => inp.addEventListener('change', () => {
     const t = find(inp.dataset.id); if (!t) return;

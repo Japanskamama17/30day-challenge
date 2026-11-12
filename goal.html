@@ -1,0 +1,843 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>ゴールチャレンジ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Old+Mincho:wght@600&display=swap">
+<style>
+/* layout: single narrow phone-first column; same look as the 30-day page; goal card on top */
+:root {
+  --bg: #f3f5f1; --surface: #ffffff; --fg: #23302b; --muted: #5f6d67; --line: #d9e0db;
+  --accent: #2f6b5a; --accent-fg: #ffffff; --accent-soft: #e2ece7; --done: #1f7a4d;
+  --warm: #c9772f; --warm-soft: #f7ebdf;
+  --display: "Zen Old Mincho", "Hiragino Mincho ProN", serif;
+  --body: "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #161b19; --surface: #1f2623; --fg: #e6ece8; --muted: #a3b0aa; --line: #34403b;
+  --accent: #7cc2a9; --accent-fg: #10201a; --accent-soft: #24332d; --done: #8fd8b0;
+  --warm: #e9a46a; --warm-soft: #33291f; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #161b19; --surface: #1f2623; --fg: #e6ece8; --muted: #a3b0aa; --line: #34403b;
+  --accent: #7cc2a9; --accent-fg: #10201a; --accent-soft: #24332d; --done: #8fd8b0;
+  --warm: #e9a46a; --warm-soft: #33291f; color-scheme: dark }
+[hidden] { display: none !important; }
+* { box-sizing: border-box; }
+#challenge { display: flex; flex-direction: column; gap: 16px; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.75; }
+.wrap { max-width: 620px; margin: 0 auto; padding-block: 24px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 16px; }
+.intro .eyebrow { font-size: 12px; letter-spacing: .12em; color: var(--warm); font-weight: 700; margin: 0; }
+.intro h1 { font-family: var(--display); font-weight: 600; font-size: 25px; line-height: 1.4; margin: 6px 0 6px; text-wrap: balance; }
+.intro p { margin: 0; color: var(--muted); font-size: 13px; }
+.btn.warm { background: var(--warm); color: #fff; }
+.due { border: 2px solid var(--warm); background: var(--warm-soft); }
+.due .label { color: var(--warm); }
+.picker, .pull, .replan, .goaledit { display: flex; flex-direction: column; gap: 8px; background: var(--bg); border-radius: 10px; padding: 12px; margin-top: 4px; }
+.picker-q { margin: 0; font-size: 14px; font-weight: 700; }
+.picker-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.picker-row input[type=date] { flex: 1; min-width: 150px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 15px var(--body); background: var(--surface); color: var(--fg); }
+.linkbtn { appearance: none; border: 0; background: none; color: var(--muted); font: 13px var(--body); text-decoration: underline; cursor: pointer; align-self: flex-start; padding: 2px 0; }
+.pull-row { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; padding: 6px 0; border-top: 1px dashed var(--line); }
+.pull-row:first-of-type { border-top: 0; }
+.pull-text { font-size: 14px; min-width: 0; overflow-wrap: anywhere; }
+.ms-list { display: flex; flex-direction: column; }
+.ms { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); flex-wrap: wrap; }
+.ms:first-child { border-top: 0; }
+.ms-head { display: flex; align-items: center; gap: 8px; }
+.ms-st { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ms-st.now { color: var(--warm); font-weight: 700; }
+.ms-st.done { color: var(--done); font-weight: 700; }
+.ms.locked b { color: var(--muted); }
+.chip:disabled { opacity: .45; cursor: default; }
+.btn:focus-visible, .chip:focus-visible, .linkbtn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.card h2, .card h3 { font-size: 17px; margin: 0; line-height: 1.5; text-wrap: balance; }
+.step { font-size: 12px; font-weight: 700; letter-spacing: .06em; color: var(--accent); border: 1.5px solid var(--accent); border-radius: 6px; padding: 0 7px; white-space: nowrap; }
+.card-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.hint { margin: 0; font-size: 13px; color: var(--muted); }
+.hint a, .foot a { color: var(--accent); font-weight: 700; }
+.btn { appearance: none; border: 0; border-radius: 10px; background: var(--accent); color: var(--accent-fg);
+  font: 700 16px/1.2 var(--body); padding: 15px; cursor: pointer; width: 100%; transition: transform .1s; }
+.btn:active { transform: scale(.98); }
+.btn:disabled { opacity: .45; cursor: default; transform: none; }
+.btn.done { background: var(--done); }
+.btn.sub { background: var(--accent-soft); color: var(--accent); font-size: 14px; padding: 12px; }
+.btn.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); font-size: 13px; padding: 10px; font-weight: 500; }
+details summary { font-size: 13px; color: var(--muted); cursor: pointer; }
+.foot { text-align: center; color: var(--muted); font-size: 13px; margin: 4px 0 0; }
+
+/* challenge */
+.lead { margin: 0; font-size: 14px; }
+textarea { width: 100%; min-height: 170px; border: 1px solid var(--line); border-radius: 10px; padding: 12px; font: 14px/1.7 var(--body);
+  background: var(--bg); color: var(--fg); resize: vertical; }
+textarea.short { min-height: 80px; }
+textarea:focus, .field:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.field { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font: 15px/1.5 var(--body); background: var(--bg); color: var(--fg); min-width: 0; }
+.dates { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.dates label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); font-weight: 700; min-width: 0; }
+.span-note { margin: 0; font-size: 14px; font-weight: 700; color: var(--accent); }
+.span-note.bad { color: var(--warm); }
+.found { margin: 0; font-size: 14px; background: var(--accent-soft); border-radius: 10px; padding: 10px 12px; }
+.found.none { background: var(--warm-soft); }
+.parsecount { font-size: 13px; color: var(--muted); margin: 0; min-height: 1.5em; }
+.parsecount.ok { color: var(--done); font-weight: 700; }
+.progress { display: flex; flex-direction: column; gap: 8px; }
+.prow { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.dayno { font-family: var(--display); font-size: 26px; line-height: 1.2; }
+.dayno small { font-family: var(--body); font-size: 14px; color: var(--muted); margin-left: 4px; }
+.pstat { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.bar { height: 10px; background: var(--accent-soft); border-radius: 999px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--accent); border-radius: 999px; width: 0; transition: width .4s; }
+.goalcard { background: var(--accent); color: var(--accent-fg); border: 0; }
+.goalcard .label { color: var(--accent-fg); opacity: .85; }
+.goaltext { margin: 0; font-family: var(--display); font-size: 20px; line-height: 1.5; overflow-wrap: anywhere; }
+.goalleft { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; margin: 0; font-size: 14px; }
+.goalleft b { font-family: var(--display); font-size: 30px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.goalcard .linkbtn { color: var(--accent-fg); opacity: .85; }
+.goaledit { color: var(--fg); }
+.today { border: 2px solid var(--accent); }
+.label { font-size: 12px; font-weight: 700; letter-spacing: .08em; color: var(--accent); margin: 0; }
+.task { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-top: 1px dashed var(--line); }
+.task:first-of-type { border-top: 0; }
+.check { appearance: none; flex: none; width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--accent); background: var(--surface);
+  cursor: pointer; display: grid; place-items: center; margin-top: 1px; }
+.check::after { content: ""; width: 12px; height: 7px; border-left: 3px solid var(--accent-fg); border-bottom: 3px solid var(--accent-fg); transform: rotate(-45deg) translate(1px,-1px); opacity: 0; }
+.check:checked { background: var(--done); border-color: var(--done); }
+.check:checked::after { opacity: 1; }
+.check:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.tbody { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.ttext { margin: 0; font-size: 15.5px; font-weight: 500; overflow-wrap: anywhere; }
+.task.isdone .ttext { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--line); }
+.tdate { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.memo { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 14px/1.5 var(--body); background: var(--bg); color: var(--fg); }
+.cheer { margin: 0; font-size: 14px; color: var(--done); font-weight: 700; }
+.missed { background: var(--warm-soft); border-color: transparent; }
+.missed .label { color: var(--warm); }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { appearance: none; border: 1px solid var(--line); background: var(--surface); color: var(--fg); border-radius: 999px; padding: 6px 12px; font: 13px/1.2 var(--body); cursor: pointer; }
+.chip.primary { border-color: var(--warm); color: var(--warm); font-weight: 700; }
+.week summary { font-size: 15px; font-weight: 700; color: var(--fg); list-style: none; display: flex; justify-content: space-between; gap: 8px; }
+.week summary::-webkit-details-marker { display: none; }
+.week summary span { font-size: 13px; font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
+.week + .week { border-top: 1px solid var(--line); padding-top: 10px; }
+.status { font-size: 11px; border-radius: 4px; padding: 0 6px; margin-left: 6px; vertical-align: 1px; white-space: nowrap; }
+.status.skip { background: var(--bg); color: var(--muted); }
+.status.moved { background: var(--warm-soft); color: var(--warm); }
+.status.extra { background: var(--accent-soft); color: var(--accent); }
+.addform { display: flex; flex-direction: column; gap: 10px; }
+.addform input[type=text], .addform input[type=date] { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font: 15px/1.5 var(--body); background: var(--bg); color: var(--fg); }
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.seg button { appearance: none; border: 1.5px solid var(--line); background: var(--surface); color: var(--muted); border-radius: 10px; padding: 10px 6px; font: 700 14px/1.3 var(--body); cursor: pointer; }
+.seg button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.seg button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.extra-note { font-size: 13px; color: var(--accent); margin: 0; }
+.tip { font-size: 13px; color: var(--muted); background: var(--surface); border-radius: 10px; padding: 12px 14px; margin: 0; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.confirm { display: flex; flex-direction: column; gap: 8px; background: var(--warm-soft); border-radius: 10px; padding: 12px; }
+.confirm p { margin: 0; font-size: 14px; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); z-index: 20;
+  background: var(--fg); color: var(--bg); padding: 10px 18px; border-radius: 999px; font-size: 14px; max-width: calc(100% - 32px); text-align: center; }
+@media (prefers-reduced-motion: reduce) { .btn, .bar i { transition: none; } }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <section class="intro">
+    <p class="eyebrow">30日チャレンジの、その先へ</p>
+    <h1>ゴールチャレンジ</h1>
+    <p>期限は自分で決める。ゴールまで、毎日ひとつずつ</p>
+  </section>
+  <div id="challenge"></div>
+  <p class="foot"><a href="./#challenge">30日チャレンジのページへ</a></p>
+</main>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const KEY = 'goal-challenge-v1';
+const OLD_KEY = 'tsugi-katagaki-30day-v1';   // 30日チャレンジの記録（読むだけ・書き換えない）
+
+/* ---------- small helpers ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const toast = $('#toast'); let tt;
+function show(msg) { toast.textContent = msg; toast.hidden = false; clearTimeout(tt); tt = setTimeout(() => toast.hidden = true, 2200); }
+const pad = n => String(n).padStart(2, '0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const todayStr = () => ymd(new Date());
+const parseYmd = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const isYmd = s => /^\d{4}-\d{2}-\d{2}$/.test(s || '');
+const daysBetween = (a, b) => Math.round((parseYmd(b) - parseYmd(a)) / 86400000);
+const addDays = (s, n) => { const d = parseYmd(s); d.setDate(d.getDate() + n); return ymd(d); };
+const WD = ['日','月','火','水','木','金','土'];
+const pretty = s => { const d = parseYmd(s); return `${d.getMonth() + 1}/${d.getDate()}（${WD[d.getDay()]}）`; };
+const slash = s => { const d = parseYmd(s); return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`; };
+
+function copyText(text, btn, label) {
+  const ok = () => { show('コピーしました'); if (btn) { btn.classList.add('done'); btn.textContent = 'コピーしました ✓'; setTimeout(() => { btn.classList.remove('done'); btn.textContent = label; }, 2200); } };
+  const fallback = () => {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.top = '0'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, text.length);
+    let done = false; try { done = document.execCommand('copy'); } catch (e) {}
+    ta.remove(); return done;
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text).then(ok, () => { if (fallback()) ok(); else show('コピーできませんでした。長押しで選択してください'); });
+  }
+  if (fallback()) ok(); else show('コピーできませんでした。長押しで選択してください');
+}
+
+/* ---------- storage ---------- */
+function readJSON(k) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+function writeJSON(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
+const load = () => readJSON(KEY);
+const save = st => writeJSON(KEY, st);
+let state = load();
+let confirmReset = false;
+
+// 始める前の入力（AIアプリに行って戻ってきても消えないように保存）
+const DKEY = KEY + '-draft';
+let draft = Object.assign({ goal: '', start: '', end: '', summary: '', backup: '', plan: '' }, readJSON(DKEY) || {});
+if (!isYmd(draft.start)) draft.start = todayStr();
+if (!isYmd(draft.end)) draft.end = addDays(draft.start, 59);
+const saveDraft = () => writeJSON(DKEY, draft);
+
+/* ---------- 30日チャレンジの記録 ---------- */
+function validOld(st) { return st && Array.isArray(st.tasks) && st.tasks.length && st.tasks.every(t => t && isYmd(t.date) && typeof t.text === 'string'); }
+function fromBackup(raw) {
+  const i = (raw || '').indexOf('{'); if (i < 0) return null;
+  try { const st = JSON.parse(raw.slice(i)); return validOld(st) && !st.goal ? st : null; } catch (e) { return null; }
+}
+function oldRecord() {
+  const own = readJSON(OLD_KEY);
+  if (validOld(own) && !own.sample) return { st: own, from: 'browser' };
+  const bk = fromBackup(draft.backup);
+  if (bk) return { st: bk, from: 'backup' };
+  return null;
+}
+function oldStats(st) {
+  const T = st.tasks;
+  const origs = T.map(t => t.orig || t.date).sort();
+  return {
+    first: origs[0], last: origs[origs.length - 1],
+    done: T.filter(t => t.status === 'done').length,
+    active: T.filter(t => t.status !== 'skip').length,
+    skip: T.filter(t => t.status === 'skip').length,
+    extra: T.filter(t => t.extra).length,
+    left: T.filter(t => t.status === 'todo').length
+  };
+}
+
+/* ---------- parsing 「日付　やること」 ---------- */
+// 年が書かれていない行は、ゴールの期間（lo〜hi）にいちばん近い年にする
+function pickYear(m, d, lo, hi) {
+  const base = parseYmd(lo).getFullYear();
+  let best = base, bestDist = Infinity;
+  [base - 1, base, base + 1].forEach(y => {
+    const s = ymd(new Date(y, m - 1, d));
+    const dist = s < lo ? daysBetween(s, lo) : s > hi ? daysBetween(hi, s) : 0;
+    if (dist < bestDist) { bestDist = dist; best = y; }
+  });
+  return best;
+}
+const RE = /^\s*[・\-•*●○◯□■▪︎]?\s*(?:(\d{4})\s*[\/\-年.]\s*)?(\d{1,2})\s*[\/\-月.]\s*(\d{1,2})\s*日?\s*(?:[（(][^）)]{1,4}[）)])?\s*(?:[〜~～]\s*(?:\d{1,2}\s*[\/月]\s*)?\d{1,2}\s*日?\s*(?:[（(][^）)]{1,4}[）)])?)?\s*[:：｜|]?\s*(.+)$/;
+function parsePlan(text, lo, hi) {
+  lo = lo || todayStr(); hi = hi || lo;
+  const tasks = [];
+  (text || '').split(/\r?\n/).forEach(raw => {
+    const line = raw.replace(/　/g, ' ').replace(/\*\*/g, '').trim();
+    if (!line) return;
+    const m = line.match(RE);
+    if (!m) return;
+    const mo = +m[2], da = +m[3];
+    if (mo < 1 || mo > 12 || da < 1 || da > 31) return;
+    const y = m[1] ? +m[1] : pickYear(mo, da, lo, hi);
+    const d = new Date(y, mo - 1, da);
+    if (d.getMonth() !== mo - 1) return;
+    const t = m[4].replace(/^[\s\-ー:：]+/, '').trim();
+    if (!t) return;
+    tasks.push({ id: 't' + tasks.length + '_' + Date.now().toString(36), date: ymd(d), orig: ymd(d), text: t, status: 'todo', memo: '' });
+  });
+  tasks.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+  return tasks;
+}
+
+function recordLines(list, today) {
+  return list.map(t => {
+    const mark = t.status === 'done' ? '✓できた' : t.status === 'skip' ? '－手放した' : (t.date < today ? '×まだ' : '（これから）');
+    const moved = (t.extra ? '（自分で追加）' : '') + (t.orig && t.date !== t.orig ? `（${pretty(t.orig)}から移動）` : '');
+    return `${pretty(t.date)} ${t.text}【${mark}】${moved}${t.memo ? ' メモ：' + t.memo : ''}`;
+  }).join('\n');
+}
+
+/* ---------- 引き継ぎプロンプト ---------- */
+function takeoverPrompt() {
+  const rec = oldRecord(), today = todayStr();
+  const span = daysBetween(draft.start, draft.end) + 1;
+  let recBlock = '';
+  if (rec) {
+    const s = oldStats(rec.st);
+    const list = rec.st.tasks.slice().sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+    recBlock = `\n■30日チャレンジの記録（${pretty(s.first)}〜${pretty(s.last)}／完了 ${s.done} / ${s.active}件、手放した ${s.skip}件、自分で追加 ${s.extra}件）\n${recordLines(list, today)}\n`;
+  }
+  const summary = draft.summary.trim() || '【ここに30日の振り返りのまとめを貼り付け】';
+  return `あなたは、忙しい人の新しい挑戦をあたたかく見守る伴走コーチです。
+
+${rec ? '私は30日間の行動プランをやり終え、振り返りも済ませました。次は、' : '私はこれから、'}自分で期限を決めてゴールを目指す「ゴールチャレンジ」を始めます。${rec ? '下の記録とまとめをもとに、' : '下の内容をもとに、'}期限までの予定を一緒に立ててください。
+
+■次のゴール
+${draft.goal.trim()}
+
+■期間
+${slash(draft.start)}〜${slash(draft.end)}（${span}日間）
+${rec ? `\n■30日の振り返りのまとめ\n${summary}\n` : ''}${recBlock}
+■進め方
+・${rec ? 'まず、30日の記録から「続けたほうがいいこと」「やめたほうがいいこと」「予定になかったけど自分で進めたこと」を短く整理してください' : 'まず、ゴールを読んで気になった点を1つだけ私に確認してください'}
+・次に、質問は1回に1つだけ。次の順番で聞いてください
+1. このゴールを選んだ理由と、期限の日にどうなっていたら「達成」と言えるか
+2. 1日・1週間で、無理なく使える時間${rec ? '（30日やってみての実感で）' : ''}
+3. ${rec ? '30日間で続かなかった日に何があったか、それを防ぐ工夫' : 'いちばん不安なことと、その小さな対策'}
+・聞き終えたら、期限までの道のりを、2週間ごとの小さな目標に分けてください
+・1日のやることは基本1つ、私が使える時間の範囲に収めてください。週に1日は休みか予備の日を入れてください
+
+■最後に
+次の形でまとめてください。
+
+【ゴールチャレンジ プラン】
+・ゴール（期限の日に達成していたい姿）：
+・2週間ごとの目標：
+・続けること／やめること${rec ? '（30日の記録から）' : ''}：
+・続かなくなったときの立て直し方：
+・今の私への一言：
+
+そのあとに、開始日から期限の日までの予定を、1行に1つずつ「日付　やること」の形（例：${slash(draft.start)}　〇〇をする）で出してください。日付は年から書き、${slash(draft.start)}〜${slash(draft.end)}の範囲にしてください。
+
+準備ができたら、最初の質問をしてください。`;
+}
+
+/* ---------- views ---------- */
+const root = $('#challenge');
+
+function spanNote() {
+  if (!isYmd(draft.start) || !isYmd(draft.end)) return { ok: false, text: '開始日と期限を選んでください' };
+  const n = daysBetween(draft.start, draft.end) + 1;
+  if (n < 2) return { ok: false, text: '期限は開始日より後の日にしてください' };
+  return { ok: true, text: `${pretty(draft.start)}〜${pretty(draft.end)}の ${n}日間` };
+}
+
+function viewSetup() {
+  const rec = oldRecord();
+  const sp = spanNote();
+  const goalOk = !!draft.goal.trim() && sp.ok;
+  const s = rec ? oldStats(rec.st) : null;
+  const n = goalOk ? parsePlan(draft.plan, draft.start, draft.end).length : 0;
+  root.innerHTML = `
+  <article class="card">
+    <header class="card-head"><span class="step">1</span><h2>ゴールと期限を決める</h2></header>
+    <label class="label" for="g-goal">ゴール</label>
+    <textarea id="g-goal" class="short" maxlength="200" placeholder="例：ココナラで最初のお客様に鑑定を届けて、レビューを1件いただく">${esc(draft.goal)}</textarea>
+    <div class="dates">
+      <label>開始日<input class="field" type="date" id="g-start" value="${esc(draft.start)}"></label>
+      <label>期限<input class="field" type="date" id="g-end" value="${esc(draft.end)}"></label>
+    </div>
+    <div class="chips" aria-label="期限をかんたんに選ぶ">
+      ${[30, 60, 90].map(d => `<button class="chip" type="button" data-span="${d}">${d}日間</button>`).join('')}
+    </div>
+    <p class="span-note ${sp.ok ? '' : 'bad'}" id="g-span">${sp.text}</p>
+  </article>
+
+  <article class="card">
+    <header class="card-head"><span class="step">2</span><h2>30日チャレンジから引き継ぐ</h2></header>
+    ${rec ? `<p class="found">${rec.from === 'browser' ? 'このブラウザに' : '貼り付けたバックアップから'}<b>30日チャレンジの記録</b>が見つかりました。<br>${pretty(s.first)}〜${pretty(s.last)}・完了 ${s.done} / ${s.active}件・手放した ${s.skip}件・自分で追加 ${s.extra}件</p>`
+      : `<p class="found none">このブラウザには30日チャレンジの記録が見つかりません。30日チャレンジのページで「バックアップをコピー」したものを下に貼ると、記録を引き継げます。</p>`}
+    ${rec && rec.from === 'browser' ? '' : `<label class="label" for="g-backup">30日チャレンジのバックアップ（記録がないときだけ）</label>
+    <textarea id="g-backup" class="short" placeholder="【30日チャレンジのバックアップ】{…}">${esc(draft.backup)}</textarea>`}
+    <label class="label" for="g-summary">30日の振り返りのまとめ（あれば）</label>
+    <textarea id="g-summary" class="short" placeholder="30日の振り返りでAIが出した【30日の振り返り】をここに貼ると、プロンプトに入ります">${esc(draft.summary)}</textarea>
+    <button class="btn warm" type="button" id="g-copy" ${goalOk ? '' : 'disabled'}>${rec ? '引き継ぎプロンプトをコピー' : 'プロンプトをコピー（記録なしで作る）'}</button>
+    <p class="hint" id="g-copyhint">${goalOk ? 'ChatGPTなどに貼り付けて、質問に答えていくと、最後に期限までの「日付　やること」が出てきます。' : '先に「1」のゴールと期限を入れてください。'}</p>
+  </article>
+
+  <article class="card">
+    <header class="card-head"><span class="step">3</span><h2>AIが出した予定を貼り付けて始める</h2></header>
+    <textarea id="plan-input" placeholder="${esc(slash(draft.start))}　〇〇をする&#10;${esc(slash(addDays(draft.start, 1)))}　〇〇をする&#10;…">${esc(draft.plan)}</textarea>
+    <p class="parsecount ${n ? 'ok' : ''}" id="parsecount">${n ? `${n}件のやることを読み込めます` : '「日付　やること」の行を読み取ります'}</p>
+    <button class="btn" type="button" id="start" ${n ? '' : 'disabled'}>ゴールチャレンジを始める</button>
+  </article>
+  <p class="tip">このページの記録は、<b>今使っているブラウザの中だけ</b>に保存されます。30日チャレンジと同じブラウザ（iPhoneならSafari）で開いてください。</p>
+  <details class="tip"><summary>ゴールチャレンジのバックアップから戻す</summary>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+      <textarea id="restore-input" class="short" placeholder="【ゴールチャレンジのバックアップ】{…}"></textarea>
+      <button class="btn sub" type="button" id="restore-go">この内容で戻す</button>
+    </div>
+  </details>`;
+  bindSetup();
+}
+
+function refreshSetupState() {
+  const sp = spanNote(), goalOk = !!draft.goal.trim() && sp.ok;
+  const el = $('#g-span'); el.textContent = sp.text; el.className = 'span-note' + (sp.ok ? '' : ' bad');
+  $('#g-copy').disabled = !goalOk;
+  $('#g-copyhint').textContent = goalOk ? 'ChatGPTなどに貼り付けて、質問に答えていくと、最後に期限までの「日付　やること」が出てきます。' : '先に「1」のゴールと期限を入れてください。';
+  const k = goalOk ? parsePlan(draft.plan, draft.start, draft.end).length : 0;
+  const pc = $('#parsecount');
+  pc.textContent = k ? `${k}件のやることを読み込めます`
+    : (!goalOk && draft.plan.trim() ? '先に「1」のゴールと期限を入れてください'
+    : draft.plan.trim() ? '日付の行が見つかりません。「2026/11/13　やること」の形になっているか確認してください' : '「日付　やること」の行を読み取ります');
+  pc.className = 'parsecount' + (k ? ' ok' : '');
+  $('#start').disabled = !k;
+}
+
+function bindSetup() {
+  const on = (id, key, after) => { const el = $(id); if (el) el.addEventListener('input', () => { draft[key] = el.value; saveDraft(); after ? after() : refreshSetupState(); }); };
+  on('#g-goal', 'goal');
+  on('#g-start', 'start');
+  on('#g-end', 'end');
+  on('#g-summary', 'summary');
+  on('#plan-input', 'plan');
+  // バックアップを貼ったら、見つかった記録の表示を出し直す
+  const bk = $('#g-backup');
+  if (bk) bk.addEventListener('change', () => { draft.backup = bk.value; saveDraft(); if (bk.value.trim() && !fromBackup(bk.value)) show('30日チャレンジのバックアップとして読めませんでした'); viewSetup(); });
+  root.querySelectorAll('[data-span]').forEach(b => b.addEventListener('click', () => {
+    if (!isYmd(draft.start)) draft.start = todayStr();
+    draft.end = addDays(draft.start, +b.dataset.span - 1); saveDraft();
+    $('#g-end').value = draft.end; refreshSetupState();
+  }));
+  $('#g-copy').addEventListener('click', e => copyText(takeoverPrompt(), e.currentTarget, e.currentTarget.textContent));
+  $('#start').addEventListener('click', () => {
+    const tasks = parsePlan(draft.plan, draft.start, draft.end);
+    if (!tasks.length || !draft.goal.trim() || !spanNote().ok) return;
+    state = { goal: draft.goal.trim(), start: draft.start, end: draft.end, tasks, created: todayStr(), reviews: {} };
+    if (!save(state)) show('このブラウザでは保存できない設定です。閉じると記録が消えます');
+    draft = { goal: '', start: '', end: '', summary: '', backup: '', plan: '' };
+    try { localStorage.removeItem(DKEY); } catch (e) {}
+    render(); window.scrollTo({ top: 0 });
+  });
+  $('#restore-go').addEventListener('click', () => restoreFrom($('#restore-input').value));
+}
+
+function restoreFrom(raw) {
+  const i = (raw || '').indexOf('{');
+  try {
+    const st = JSON.parse(raw.slice(i));
+    if (!st || !Array.isArray(st.tasks) || !st.tasks.length) throw 0;
+    if (!st.goal || !isYmd(st.start) || !isYmd(st.end)) { show('30日チャレンジのバックアップのようです。ゴールチャレンジのバックアップを貼ってください'); return; }
+    state = st; commit(); show('記録を戻しました');
+  } catch (e) { show('読み込めませんでした。コピーした内容をそのまま貼り付けてください'); }
+}
+
+let moving = null;      // task id whose "move to another day" picker is open
+let offerPull = false;  // after moving a task off today, offer to pull another one in
+let movedId = null;
+let replanOpen = false;
+let addOpen = false;
+let addDone = true;
+let goalEdit = false;
+
+// 振り返りの節目：3日・1週間・2週間、そのあと2週間ごと、最後に期限の日
+function milestones(span) {
+  const list = [
+    { key: 'd3', day: 3,  name: '最初の3日', kind: 'd3' },
+    { key: 'w1', day: 7,  name: '1週間',    kind: 'w1' },
+    { key: 'w2', day: 14, name: '2週間',    kind: 'w2' }
+  ].filter(m => m.day < span);
+  for (let d = 28; span - d >= 7; d += 14) list.push({ key: 'w' + d / 7, day: d, name: `${d / 7}週間`, kind: 'mid' });
+  list.push({ key: 'end', day: span, name: '期限の日', kind: 'end' });
+  return list;
+}
+
+function sortTasks() { state.tasks.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0); }
+
+function planBounds() {
+  const T = state.tasks;
+  const first = state.start, end = state.end;
+  const last = T.reduce((m, t) => t.date > m ? t.date : m, end);
+  const span = Math.max(1, daysBetween(first, end) + 1);
+  return { first, end, last, span };
+}
+
+function taskRow(t, opts = {}) {
+  const done = t.status === 'done';
+  const memo = opts.memo ? `<input class="memo" type="text" id="memo-${t.id}" data-id="${t.id}" value="${esc(t.memo)}" placeholder="ひとことメモ（どうだった？）" maxlength="120">` : '';
+  const badge = (t.extra ? '<span class="status extra">自分で追加</span>' : '') + (t.status === 'skip' ? '<span class="status skip">手放した</span>' : (t.date !== t.orig ? `<span class="status moved">${pretty(t.orig).replace(/（.）/, '')}から移動</span>` : ''));
+  const actions = opts.actions && t.status === 'todo' ? `<div class="chips">
+      <button class="chip" type="button" data-act="move" data-id="${t.id}">別の日に回す</button>
+      <button class="chip" type="button" data-act="skip" data-id="${t.id}">手放す</button>
+    </div>` : '';
+  return `<div class="task ${done ? 'isdone' : ''}">
+    <input class="check" type="checkbox" id="chk-${t.id}" data-id="${t.id}" ${done ? 'checked' : ''} aria-label="${esc(t.text)} を完了にする" ${t.status === 'skip' ? 'disabled' : ''}>
+    <div class="tbody">
+      ${opts.date ? `<span class="tdate">${pretty(t.date)}${badge}</span>` : (badge ? `<span class="tdate">${badge}</span>` : '')}
+      <label class="ttext" for="chk-${t.id}">${esc(t.text)}</label>
+      ${memo}
+      ${actions}
+      ${t.extra && opts.date ? `<button class="linkbtn" type="button" data-act="del" data-id="${t.id}">この項目を削除</button>` : ''}
+      ${moving === t.id ? pickerHtml(t) : ''}
+    </div>
+  </div>`;
+}
+
+function pickerHtml(t) {
+  const tomorrow = addDays(todayStr(), 1);
+  const def = t.date >= tomorrow ? addDays(t.date, 1) : tomorrow;
+  const quick = [1, 2, 3].map(n => { const d = addDays(todayStr(), n); return `<button class="chip" type="button" data-act="moveto" data-id="${t.id}" data-date="${d}">${n === 1 ? '明日' : pretty(d)}</button>`; }).join('');
+  return `<div class="picker">
+    <p class="picker-q">いつに回しますか？</p>
+    <div class="chips">${quick}</div>
+    <div class="picker-row">
+      <input type="date" id="date-${t.id}" min="${tomorrow}" value="${def}" aria-label="回す日を選ぶ">
+      <button class="chip primary" type="button" data-act="movepick" data-id="${t.id}">この日に回す</button>
+    </div>
+    <button class="linkbtn" type="button" data-act="movecancel">やめる</button>
+  </div>`;
+}
+
+const milestoneDate = (m, b) => addDays(b.first, m.day - 1);
+
+function viewPlan() {
+  const T = state.tasks, today = todayStr();
+  const b = planBounds();
+  const MS = milestones(b.span);
+  const dayNo = daysBetween(b.first, today) + 1;
+  const left = daysBetween(today, b.end);
+  const active = T.filter(t => t.status !== 'skip');
+  const doneN = T.filter(t => t.status === 'done').length;
+  const extraDone = T.filter(t => t.extra && t.status === 'done').length;
+  const pct = active.length ? Math.round(doneN / active.length * 100) : 0;
+  const todays = T.filter(t => t.date === today && t.status !== 'skip');
+  const todayTodo = todays.filter(t => t.status === 'todo');
+  const missed = T.filter(t => t.date < today && t.status === 'todo');
+  const upcoming = T.filter(t => t.date > today && t.status === 'todo');
+  const next = upcoming[0];
+  const finished = today > b.last && !missed.length;
+  state.reviews = state.reviews || {};
+
+  let leftHtml;
+  if (dayNo < 1) leftHtml = `<p class="goalleft">スタートまで あと<b>${1 - dayNo}</b>日</p>`;
+  else if (left > 0) leftHtml = `<p class="goalleft">ゴールまで あと<b>${left}</b>日<span>（期限 ${pretty(b.end)}）</span></p>`;
+  else if (left === 0) leftHtml = `<p class="goalleft"><b>今日</b>が期限の日です</p>`;
+  else leftHtml = `<p class="goalleft">期限（${pretty(b.end)}）を過ぎました</p>`;
+
+  const goalHtml = `<article class="card goalcard">
+    <p class="label">ゴール</p>
+    <p class="goaltext">${esc(state.goal)}</p>
+    ${leftHtml}
+    ${goalEdit ? `<div class="goaledit">
+      <label class="label" for="ge-goal">ゴール</label>
+      <textarea id="ge-goal" class="short" maxlength="200">${esc(state.goal)}</textarea>
+      <label class="label" for="ge-end">期限</label>
+      <input class="field" type="date" id="ge-end" value="${b.end}" min="${addDays(b.first, 1)}">
+      <div class="row2"><button class="btn" type="button" id="ge-save">変更する</button><button class="btn ghost" type="button" id="ge-cancel">やめる</button></div>
+    </div>` : '<button class="linkbtn" type="button" id="ge-open">ゴールと期限を見直す</button>'}
+  </article>`;
+
+  let dayLabel;
+  if (dayNo < 1) dayLabel = `<span class="dayno">あと${1 - dayNo}日<small>でスタート</small></span>`;
+  else if (finished) dayLabel = `<span class="dayno">完走！<small>${b.span}日間おつかれさまでした</small></span>`;
+  else dayLabel = `<span class="dayno">${dayNo}日目<small>/ ${b.span}日</small></span>`;
+
+  const due = MS.filter(m => today >= milestoneDate(m, b) && !state.reviews[m.key]);
+  const dueNow = due[due.length - 1];
+  const dueBanner = dueNow ? `<article class="card due">
+      <p class="label">振り返りの日</p>
+      <p class="lead"><b>${dueNow.name}</b>の振り返りができます。${dueNow.kind === 'end' ? 'ここまでの道のりを、ゴールと照らし合わせて整理しましょう。' : 'ここで一度立ち止まると、ゴールまでの残りの日がぐっと進めやすくなります。'}</p>
+      <button class="btn warm" type="button" data-review="${dueNow.key}">${dueNow.name}の振り返りプロンプトをコピー</button>
+    </article>` : '';
+
+  let pullHtml = '';
+  if (offerPull) {
+    const cand = upcoming.filter(t => t.id !== movedId).slice(0, 3);
+    pullHtml = `<div class="pull">
+      <p class="picker-q">他のやることを今日に回しますか？</p>
+      ${cand.length ? cand.map(t => `<div class="pull-row"><span class="tdate">${pretty(t.date)}</span><span class="pull-text">${esc(t.text)}</span>
+        <button class="chip primary" type="button" data-act="pull" data-id="${t.id}">今日やる</button></div>`).join('') : '<p class="lead">この先の予定はありません。</p>'}
+      <button class="btn ghost" type="button" data-act="nopull">今日はこのままでOK</button>
+    </div>`;
+  }
+
+  let todayHtml;
+  if (todays.length) {
+    const allDone = todays.every(t => t.status === 'done');
+    todayHtml = `<article class="card today">
+      <p class="label">今日の一歩 ・ ${pretty(today)}</p>
+      ${todays.map(t => taskRow(t, { memo: true, actions: true })).join('')}
+      ${allDone ? '<p class="cheer">今日の一歩、できました。ゴールにまた近づきました！</p>' : ''}
+      ${pullHtml}
+      ${todayTodo.length && !offerPull ? '<button class="btn ghost" type="button" data-act="rest">今日はお休みにする（予定を1日ずつ後ろへ）</button>' : ''}
+    </article>`;
+  } else {
+    todayHtml = `<article class="card today">
+      <p class="label">今日の一歩 ・ ${pretty(today)}</p>
+      <p class="lead">${finished ? 'プランはすべて終わりました。下の「振り返り」で、AIと一緒にゴールまでの道のりを整理しましょう。' : (next ? `今日は予定のない日です。ひと休みでも大丈夫。<br>次は <b>${pretty(next.date)}</b>：${esc(next.text)}` : '予定はすべて完了しています。')}</p>
+      ${pullHtml}
+      ${!offerPull && next ? `<button class="btn sub" type="button" data-act="pull" data-id="${next.id}">余裕があるので、次のやることを今日やる</button>` : ''}
+    </article>`;
+  }
+
+  const missedHtml = missed.length ? `<article class="card missed">
+    <p class="label">やり残し ${missed.length}件</p>
+    <p class="lead">できなかった日があっても大丈夫。今日やるか、別の日に回すか、思い切って手放すかを選びましょう。</p>
+    ${missed.map(t => `<div class="task">
+      <div class="tbody">
+        <span class="tdate">${pretty(t.date)}</span>
+        <p class="ttext">${esc(t.text)}</p>
+        <div class="chips">
+          <button class="chip primary" type="button" data-act="today" data-id="${t.id}">今日やる</button>
+          <button class="chip" type="button" data-act="move" data-id="${t.id}">別の日に回す</button>
+          <button class="chip" type="button" data-act="done" data-id="${t.id}">もうやった</button>
+          <button class="chip" type="button" data-act="skip" data-id="${t.id}">手放す</button>
+        </div>
+        ${moving === t.id ? pickerHtml(t) : ''}
+      </div></div>`).join('')}
+    ${missed.length > 1 ? '<button class="btn sub" type="button" data-act="alltoday">全部を今日から1日1件ずつ並べ直す</button>' : ''}
+  </article>` : '';
+
+  const weeks = [];
+  T.forEach(t => { const w = Math.max(0, Math.floor(daysBetween(b.first, t.date) / 7)); (weeks[w] = weeks[w] || []).push(t); });
+  const curW = Math.max(0, Math.floor((dayNo - 1) / 7));
+  const weeksHtml = weeks.map((list, i) => {
+    if (!list) return '';
+    const d = list.filter(t => t.status === 'done').length, a = list.filter(t => t.status !== 'skip').length;
+    return `<details class="week" ${i === curW ? 'open' : ''}><summary>${i + 1}週目<span>${d} / ${a} 完了</span></summary>
+      ${list.map(t => taskRow(t, { date: true })).join('')}</details>`;
+  }).join('');
+
+  const msHtml = MS.map(m => {
+    const md = milestoneDate(m, b), reached = today >= md, did = state.reviews[m.key];
+    const st = did ? `<span class="ms-st done">済み</span>` : reached ? `<span class="ms-st now">できます</span>` : `<span class="ms-st">${pretty(md)}〜</span>`;
+    return `<div class="ms ${reached ? '' : 'locked'}">
+      <div class="ms-head"><b>${m.name}</b>${st}</div>
+      <button class="chip ${reached && !did ? 'primary' : ''}" type="button" data-review="${m.key}" ${reached ? '' : 'disabled'}>プロンプトをコピー</button>
+    </div>`;
+  }).join('');
+
+  root.innerHTML = `
+  ${goalHtml}
+  <article class="card progress">
+    <div class="prow">${dayLabel}<span class="pstat">完了 ${doneN} / ${active.length}件</span></div>
+    ${extraDone ? `<p class="extra-note">うち、自分で追加した「できたこと」${extraDone}件</p>` : ''}
+    <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="達成率"><i style="width:${pct}%"></i></div>
+  </article>
+  ${dueBanner}
+  ${todayHtml}
+  ${missedHtml}
+  <article class="card">
+    ${addOpen ? `<div class="addform">
+      <h3>やること・やったことを追加</h3>
+      <div class="seg" role="group" aria-label="追加する種類">
+        <button type="button" id="seg-done" aria-pressed="${addDone}">やったことを記録</button>
+        <button type="button" id="seg-todo" aria-pressed="${!addDone}">これからやる</button>
+      </div>
+      <input type="text" id="add-text" maxlength="80" placeholder="${addDone ? '例：スプレッド画像を作るツールを作った' : '例：モニター鑑定の感想をまとめる'}">
+      <input type="date" id="add-date" value="${todayStr()}" aria-label="日付">
+      <div class="row2"><button class="btn" type="button" id="add-go">追加する</button><button class="btn ghost" type="button" id="add-cancel">やめる</button></div>
+    </div>` : `<button class="btn sub" type="button" id="add-open">＋ 予定にないことを追加</button>
+    <p class="hint">予定になかったけど進めたことも、立派な一歩。記録しておくと、振り返りにも入ります。</p>`}
+  </article>
+  <article class="card">
+    <h3>${b.span}日間の予定</h3>
+    ${weeksHtml}
+  </article>
+  <article class="card">
+    <h3>振り返り</h3>
+    <p class="lead">節目ごとに、ゴールと記録が入った振り返りプロンプトをコピーできます。AIに貼り付けると、ゴールまでの進み方を一緒に見直して、この先の予定も調整してくれます。</p>
+    <div class="ms-list">${msHtml}</div>
+    ${replanOpen ? `<div class="replan">
+      <label class="label" for="replan-input">AIが出した「これからの予定」を貼り付け</label>
+      <textarea id="replan-input" placeholder="${esc(slash(addDays(today, 1)))}　〇〇をする&#10;${esc(slash(addDays(today, 2)))}　〇〇をする&#10;…"></textarea>
+      <p class="parsecount" id="replan-count">今日以降のまだの予定が、貼り付けた内容に入れ替わります。できたことの記録は残ります。</p>
+      <div class="row2"><button class="btn" type="button" id="replan-go" disabled>予定を入れ替える</button><button class="btn ghost" type="button" id="replan-cancel">やめる</button></div>
+    </div>` : '<button class="btn sub" type="button" id="replan-open">振り返りで調整した予定を反映する</button>'}
+  </article>
+  <p class="tip">毎日開くのを忘れないように、iPhoneのリマインダーを1つだけ作り、「URL」の欄にこのページのアドレスを入れて「毎日」通知にしておくのがおすすめです。通知から1タップでここが開きます。</p>
+  <article class="card">
+    <h3>記録の保存</h3>
+    <p class="lead" style="font-size:13px;color:var(--muted)">記録はこのブラウザの中だけに保存されます。機種変更などに備えて、ときどきバックアップをコピーしてメモアプリに残しておくと安心です。</p>
+    <div class="row2">
+      <button class="btn sub" type="button" id="backup">バックアップをコピー</button>
+      <button class="btn sub" type="button" id="restore-open">バックアップから戻す</button>
+    </div>
+    <div id="restore-box" hidden>
+      <textarea id="restore-input" placeholder="コピーしておいたバックアップを貼り付け" style="min-height:90px"></textarea>
+      <button class="btn" type="button" id="restore-go">この内容で戻す</button>
+    </div>
+    ${confirmReset ? `<div class="confirm"><p>今のゴールと記録を消して、新しいゴールチャレンジを始めますか？（30日チャレンジの記録は消えません）</p>
+      <div class="row2"><button class="btn" type="button" id="reset-yes">消してやり直す</button><button class="btn ghost" type="button" id="reset-no">やめる</button></div></div>`
+      : '<button class="btn ghost" type="button" id="reset">最初からやり直す</button>'}
+  </article>`;
+  bindPlan();
+}
+
+function keepAdd() {
+  const tx = ($('#add-text') || {}).value || '', dt = ($('#add-date') || {}).value || '';
+  render(); if ($('#add-text')) $('#add-text').value = tx; if (dt && $('#add-date')) $('#add-date').value = dt;
+}
+function find(id) { return state.tasks.find(t => t.id === id); }
+function commit() { sortTasks(); save(state); render(); }
+
+function bindPlan() {
+  root.querySelectorAll('.check').forEach(c => c.addEventListener('change', () => {
+    const t = find(c.dataset.id); if (!t) return;
+    t.status = c.checked ? 'done' : 'todo';
+    if (c.checked) show('できました！');
+    commit();
+  }));
+  root.querySelectorAll('.memo').forEach(inp => inp.addEventListener('change', () => {
+    const t = find(inp.dataset.id); if (!t) return;
+    t.memo = inp.value.trim(); save(state); show('メモを保存しました');
+  }));
+  root.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => {
+    const act = b.dataset.act, today = todayStr();
+    const t = b.dataset.id ? find(b.dataset.id) : null;
+    const wasToday = t && t.date === today;
+    switch (act) {
+      case 'alltoday': {
+        state.tasks.filter(x => x.date < today && x.status === 'todo').forEach((x, i) => { x.date = addDays(today, i); });
+        show('今日から1日1件ずつ並べ直しました'); break;
+      }
+      case 'rest': {
+        state.tasks.filter(x => x.date >= today && x.status === 'todo').forEach(x => { x.date = addDays(x.date, 1); });
+        show('今日はお休み。予定を1日ずつ後ろにずらしました'); break;
+      }
+      case 'move': moving = moving === t.id ? null : t.id; return render();
+      case 'movecancel': moving = null; return render();
+      case 'moveto': case 'movepick': {
+        const d = act === 'moveto' ? b.dataset.date : ($('#date-' + t.id) || {}).value;
+        if (!d || d <= today) { show('明日以降の日付を選んでください'); return; }
+        t.date = d; moving = null;
+        show(`${pretty(d)}に回しました`);
+        if (wasToday && state.tasks.some(x => x.date > today && x.status === 'todo' && x.id !== t.id)) { offerPull = true; movedId = t.id; }
+        break;
+      }
+      case 'pull': t.date = today; offerPull = false; show('今日の一歩に入れました'); break;
+      case 'nopull': offerPull = false; show('了解です。今日はこのままで'); break;
+      case 'today': t.date = today; show('今日の一歩に移しました'); break;
+      case 'done': t.status = 'done'; show('完了にしました'); break;
+      case 'skip': t.status = 'skip'; moving = null; show('手放しました。それも大事な判断です'); break;
+      case 'del': state.tasks = state.tasks.filter(x => x.id !== t.id); show('削除しました'); break;
+    }
+    commit();
+  }));
+  root.querySelectorAll('[data-review]').forEach(b => b.addEventListener('click', () => {
+    const m = milestones(planBounds().span).find(x => x.key === b.dataset.review);
+    if (!m) return;
+    copyText(reviewPrompt(m), null, '');
+    state.reviews = state.reviews || {}; state.reviews[m.key] = todayStr(); save(state);
+    setTimeout(render, 900);
+  }));
+  const go = $('#ge-open'); if (go) go.addEventListener('click', () => { goalEdit = true; render(); });
+  const gc = $('#ge-cancel'); if (gc) gc.addEventListener('click', () => { goalEdit = false; render(); });
+  const gs = $('#ge-save'); if (gs) gs.addEventListener('click', () => {
+    const g = $('#ge-goal').value.trim(), e = $('#ge-end').value;
+    if (!g) { show('ゴールを入力してください'); return; }
+    if (!isYmd(e) || e <= state.start) { show('期限は開始日より後の日にしてください'); return; }
+    state.goal = g; state.end = e; goalEdit = false; show('ゴールと期限を変更しました'); commit();
+  });
+  const ao = $('#add-open'); if (ao) ao.addEventListener('click', () => { addOpen = true; render(); const i = $('#add-text'); if (i) i.focus(); });
+  const ac = $('#add-cancel'); if (ac) ac.addEventListener('click', () => { addOpen = false; render(); });
+  const sd = $('#seg-done'); if (sd) sd.addEventListener('click', () => { addDone = true; keepAdd(); });
+  const st = $('#seg-todo'); if (st) st.addEventListener('click', () => { addDone = false; keepAdd(); });
+  const ag = $('#add-go'); if (ag) ag.addEventListener('click', () => {
+    const text = $('#add-text').value.trim(); const date = $('#add-date').value || todayStr();
+    if (!text) { show('内容を入力してください'); return; }
+    state.tasks.push({ id: 'x' + Date.now().toString(36), date, orig: date, text, status: addDone ? 'done' : 'todo', memo: '', extra: true });
+    addOpen = false; show(addDone ? 'できたことを記録しました！' : '予定に追加しました'); commit();
+  });
+  const ro = $('#replan-open'); if (ro) ro.addEventListener('click', () => { replanOpen = true; render(); });
+  const rc = $('#replan-cancel'); if (rc) rc.addEventListener('click', () => { replanOpen = false; render(); });
+  const replanTasks = txt => { const today = todayStr(), hi = state.end > today ? state.end : today; return parsePlan(txt, today, hi).filter(x => x.date >= today); };
+  const ri = $('#replan-input');
+  if (ri) ri.addEventListener('input', () => {
+    const k = replanTasks(ri.value).length;
+    $('#replan-count').textContent = k ? `今日以降の予定 ${k}件に入れ替えます。できたことの記録は残ります。` : '「日付　やること」の行で、今日以降の日付のものを読み取ります。';
+    $('#replan-count').className = 'parsecount' + (k ? ' ok' : '');
+    $('#replan-go').disabled = !k;
+  });
+  const rg = $('#replan-go'); if (rg) rg.addEventListener('click', () => {
+    const today = todayStr();
+    const fresh = replanTasks($('#replan-input').value);
+    if (!fresh.length) return;
+    state.tasks = state.tasks.filter(x => !(x.status === 'todo' && x.date >= today)).concat(fresh);
+    replanOpen = false; show('これからの予定を入れ替えました'); commit();
+  });
+  $('#backup').addEventListener('click', e => copyText('【ゴールチャレンジのバックアップ】\n' + JSON.stringify(state), e.currentTarget, 'バックアップをコピー'));
+  $('#restore-open').addEventListener('click', () => { const bx = $('#restore-box'); bx.hidden = !bx.hidden; });
+  $('#restore-go').addEventListener('click', () => restoreFrom($('#restore-input').value));
+  const r = $('#reset'); if (r) r.addEventListener('click', () => { confirmReset = true; render(); });
+  const ry = $('#reset-yes'); if (ry) ry.addEventListener('click', () => { confirmReset = false; state = null; try { localStorage.removeItem(KEY); } catch (e) {} render(); window.scrollTo({ top: 0 }); });
+  const rn = $('#reset-no'); if (rn) rn.addEventListener('click', () => { confirmReset = false; render(); });
+}
+
+function reviewPrompt(m) {
+  const T = state.tasks, today = todayStr();
+  const b = planBounds();
+  const dayNo = daysBetween(b.first, today) + 1;
+  const left = daysBetween(today, b.end);
+  const past = T.filter(t => t.date <= today || t.status !== 'todo');
+  const future = T.filter(t => t.date > today && t.status === 'todo');
+  const done = past.filter(t => t.status === 'done').length, act = past.filter(t => t.status !== 'skip').length;
+  const isEnd = m.kind === 'end';
+  const qs = {
+    d3:  ['3日やってみて、正直な感想（楽しい・しんどい・まだ分からない など）', '1日の作業量はちょうどいいか、多すぎるか、少なすぎるか', '取り組みやすかった時間帯や場面'],
+    w1:  ['1週目で一番手応えがあったこと', 'できなかった日に何があったか（責めずに、原因を一緒に探す）', 'ゴールへの気持ちは、始める前と比べて強くなったか・弱くなったか'],
+    w2:  ['ここまでで「ゴールに近づいている」と感じた瞬間', '逆に「思っていたのと違う」と感じたこと', 'このままのペースで期限に間に合いそうか、今の気持ち'],
+    mid: ['この2週間で、ゴールに一番近づいたと感じたこと', '予定どおりに進まなかったことと、その理由（責めずに、原因を一緒に探す）', `期限まで残り${Math.max(0, left)}日で、ゴールのために一番優先したいこと`],
+    end: ['ゴールにどこまで届いたか、自分の言葉で', 'この期間で一番楽しかった・しっくりきたこと', '思っていたのと違った・しんどかったこと']
+  }[m.kind];
+  const out = isEnd
+    ? `【ゴールチャレンジの振り返り】
+・ゴールにどこまで届いたか（できたことを具体的に）：
+・この期間で分かった、私に合っているやり方：
+・合っていなかったこと：
+・次のゴール案と、期限の目安：
+・次の最初の一歩（今日〜3日以内）：
+・今の私への一言：`
+    : `【${m.name}の振り返り】
+・できたこと（小さなことも具体的に）：
+・ゴールに対して、今どのあたりにいるか：
+・つまずいた原因と、その対策：
+・この先の予定で調整したほうがいいこと（ゴールや期限を見直したほうがよければ、その提案も）：
+・今の私への一言：
+
+最後に、調整したこれからの予定を、1行に1つずつ「日付　やること」の形（例：${slash(addDays(today, 1))}　〇〇をする）で出してください。日付は年から書き、今日（${slash(today)}）から期限の日（${slash(b.end)}）までにしてください。`;
+  const when = isEnd
+    ? (left < 0 ? `期限の日（${pretty(b.end)}）を過ぎたので、ゴールチャレンジ全体の振り返りです。` : `今日は期限の日なので、ゴールチャレンジ全体の振り返りです。`)
+    : `今日は${dayNo}日目、「${m.name}」の振り返りです。期限まであと${Math.max(0, left)}日です。`;
+  return `あなたは、忙しい人の新しい挑戦をあたたかく見守る伴走コーチです。
+
+私は、自分で期限を決めた「ゴールチャレンジ」に取り組んでいます。${when}下のゴールと記録をもとに、一緒に振り返ってください。
+
+■ゴール
+${state.goal}
+
+■期間
+${slash(b.first)}〜${slash(b.end)}（${b.span}日間）
+
+■ここまでの記録（完了 ${done} / ${act}件）
+${recordLines(past, today) || '（まだ記録はありません）'}
+${future.length ? `\n■これからの予定\n${recordLines(future, today)}\n` : ''}
+■進め方
+・まず、できたことを具体的に認めてください
+・質問は1回に1つだけ。次の順番で聞いてください
+${qs.map((q, i) => `${i + 1}. ${q}`).join('\n')}
+・聞き終えたら、次の形でまとめてください
+
+${out}
+
+準備ができたら、最初の質問をしてください。`;
+}
+
+function render() {
+  if (state && Array.isArray(state.tasks) && state.tasks.length && state.goal && isYmd(state.start) && isYmd(state.end)) viewPlan();
+  else viewSetup();
+}
+render();
+</script>
+
+</body>
+</html>
